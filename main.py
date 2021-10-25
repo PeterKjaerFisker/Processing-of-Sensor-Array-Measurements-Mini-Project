@@ -46,16 +46,29 @@ if __name__ == '__main__':
     # Lambda:
     lambda_ = 3e8/f0
 
-    Theta = np.linspace(0, np.pi, Res)
+    # Get Subarray
+    N_row = 71
+    N_column = 66
+    L1 = 4
+    L2 = 4
+    idx_array = fun.getSubarray(N_row, N_column, L1, L2, 1)
 
-    Tau = np.linspace(0, 1, Res)
+    idx_tau = np.arange(0, np.size(dat['tau'], axis=0))
 
-    R = np.cov(X, bias=True)
+    # Theta = np.linspace(0, np.pi, Res)
 
-    Pm = fun.MUSIC(R, Res, M, np.prod(L2d), r, f0)
+    # Ts = dat['tau'][1]-dat['tau'][0]  # Delay Spacing
 
-    # for theta in Theta:
-    #     for tau in Tau:
-    #         tmp = fun.delay_respons_vector(lambda_, theta, r, f0, tau)
+    # Tau = np.linspace(0, 1, Res)
 
+    R = np.cov(X[idx_array, idx_tau], bias=True)
+
+    Pm = fun.MUSIC(R, Res, M, np.prod(L2d),
+                   r[:, idx_array].reshape(2, L1*L2), f0)
+
+    """
+    for theta in Theta:
+        for tau in Tau:
+            tmp = fun.delay_respons_vector(lambda_, theta, r, f0, tau)
+    """
     print("Hello World")  # Prints "Hello World"
