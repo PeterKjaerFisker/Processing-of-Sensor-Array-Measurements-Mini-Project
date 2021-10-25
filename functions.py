@@ -15,6 +15,40 @@ from scipy.signal import find_peaks
 # %% Functions
 
 
+# ---- Modified ----
+def delay_respons_vector(lambda_, theta, r, f0, tau):
+    return (np.exp(-1j*2*np.pi*(1/lambda_) *
+                   np.array([np.cos(theta), np.sin(theta)]).T@r) *
+            np.exp(-1j*f0*tau))
+
+
+def MUSIC(R, Res, M, L, r, f0):
+    # ------ Step 3 - Form U ------
+    E, U = np.linalg.eig(R)
+    Un = U[:, M:]
+
+    # ------ Step 4 - Calculate Freq. estimate ------
+
+    # Create the sweep parameters
+    Theta = np.linspace(0, np.pi, Res)
+    Tau = np.linspace(0, 1, Res)
+    Pm = np.zeros([Res, 1])
+
+    # Do the caluclations
+    for i in range(len(Theta)):
+        for j in range(len(Tau)):
+            # Calculate for the different steering matrix
+            As = delay_respons_vector(L, Theta[i], r, f0, Tau[j])
+
+            Ash = np.conjugate(As).T
+            Unh = np.conjugate(Un).T
+
+            Pm[i, j] = 1/np.abs(Ash@Un@Unh@As)
+
+    return Pm
+
+
+# ---- Old ----
 def steering_matrix_1d(L, theta, d, lambda_):
     return np.exp(1j*2*np.pi*np.arange(0, L).reshape(L, 1) *
                   (d/lambda_)*np.cos(theta))
@@ -56,30 +90,6 @@ def DMLE(theta, x, L, M):
     A_ort = np.eye(L)-A@AT
 
     return (1/(L-M))*np.trace(A_ort@R)
-
-
-def MUSIC(R, Res, M, L):
-    # ------ Step 3 - Form U ------
-    E, U = np.linalg.eig(R)
-    Un = U[:, M:]
-
-    # ------ Step 4 - Calculate Freq. estimate ------
-
-    # Create the sweep parameters
-    Theta = np.linspace(0, np.pi, Res)
-    Pm = np.zeros([Res, 1])
-
-    # Do the caluclations
-    for i in range(len(Theta)):
-        # Calculate for the different steering matrix
-        As = steering_matrix_1d(L, Theta[i])
-
-        Ash = np.conjugate(As).T
-        Unh = np.conjugate(Un).T
-
-        Pm[i] = 1/np.abs(Ash@Un@Unh@As)
-
-    return Pm
 
 
 def ESPRIT(R, Res, M, L2d):
