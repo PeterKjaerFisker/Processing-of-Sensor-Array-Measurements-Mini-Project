@@ -19,7 +19,7 @@ from scipy.signal import find_peaks
 def delay_respons_vector(lambda_, theta, r, f0, tau):
     return (np.exp(-1j*2*np.pi*(1/lambda_) *
                    np.array([np.cos(theta), np.sin(theta)]).T@r) *
-            np.exp(-1j*f0*tau))
+            np.exp(-1j*f0*tau)).reshape([np.size(r, axis=1), 1])
 
 
 def MUSIC(R, Res, M, L, r, f0):
@@ -32,7 +32,7 @@ def MUSIC(R, Res, M, L, r, f0):
     # Create the sweep parameters
     Theta = np.linspace(0, np.pi, Res)
     Tau = np.linspace(0, 1, Res)
-    Pm = np.zeros([Res, 1])
+    Pm = np.zeros([Res, Res])
 
     # Do the caluclations
     for i in range(len(Theta)):

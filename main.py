@@ -21,7 +21,7 @@ import functions as fun
 if __name__ == '__main__':
 
     # ---- Parameters ----
-    Res = 100
+    Res = 10
 
     L2d = [71, 66]
 
@@ -54,8 +54,8 @@ if __name__ == '__main__':
 
     Pm = fun.MUSIC(R, Res, M, np.prod(L2d), r, f0)
 
-    for theta in Theta:
-        for tau in Tau:
-            tmp = fun.delay_respons_vector(lambda_, theta, r, f0, tau)
+    # for theta in Theta:
+    #     for tau in Tau:
+    #         tmp = fun.delay_respons_vector(lambda_, theta, r, f0, tau)
 
     print("Hello World")  # Prints "Hello World"
