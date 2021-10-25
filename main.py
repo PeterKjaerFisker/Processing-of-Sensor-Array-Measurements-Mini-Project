@@ -7,7 +7,7 @@ Created on Mon Oct 25 09:04:24 2021
 """
 
 # %% Imports
-
+import functions as fun
 
 # %% Main
 
