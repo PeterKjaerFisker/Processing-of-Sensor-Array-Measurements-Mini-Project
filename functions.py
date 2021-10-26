@@ -44,7 +44,7 @@ def MUSIC(R, Res, M, dat, idx_tau, idx_array):
     lambda_ = 3e8/f0
 
     Theta = np.linspace(0, np.pi, Res)
-    Pm = np.zeros([Res, Res])
+    Pm = np.zeros([Res, len(Tau)])
 
     # ------ Step 3 - Form U ------
     E, U = np.linalg.eig(R)
@@ -56,13 +56,13 @@ def MUSIC(R, Res, M, dat, idx_tau, idx_array):
         for j in range(len(Tau)):
             # Calculate for the different steering matrix
             As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
-            print(np.shape(As))
+
             Ash = np.conjugate(As).T
             Unh = np.conjugate(Un).T
 
             Pm[i, j] = 1/np.abs(Ash@Un@Unh@As)
 
-            print(f"step {i*len(Tau) + j + 1} out of {Res*Res}")
+            print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
 
     return Pm
 

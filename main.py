@@ -12,6 +12,10 @@ import numpy as np
 import scipy.io as scio
 import functions as fun
 
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.io as pio
+pio.renderers.default='browser'
 
 # %% functions
 
@@ -60,5 +64,18 @@ if __name__ == '__main__':
 
     # Do the MUSIC
     Pm = fun.MUSIC(R, Res, M, dat, idx_tau, idx_array)
+
+    Theta = np.linspace(0, np.pi, Res)
+
+    fig2 = go.Figure(data=[go.Surface(z=Pm, x=dat['tau'],
+                                      y=Theta * 180 / np.pi)])
+
+    fig2.update_layout(scene=dict(
+        xaxis_title='Azimuth Angle',
+        yaxis_title='Elevation Angle'),
+        title=f"Sweep - res: {Res}X{Res} points, SNR: {10}dB",
+    )
+
+    fig2.show()
 
     print("Hello World")  # Prints "Hello World"
