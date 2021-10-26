@@ -16,31 +16,47 @@ from scipy.signal import find_peaks
 
 
 # ---- Modified ----
-def delay_respons_vector(lambda_, theta, r, tau, f0):
-    return (np.exp(-1j*2*np.pi*(1/lambda_) *
-                   np.array([np.cos(theta), np.sin(theta)]).T@r) *
-            np.exp(-1j*2*np.pi*f0*tau)).reshape([np.size(r, axis=1), 1])
+def delay_respons_vector(theta, tau, r, f, lambda_):
+
+    # Parameters
+    f0 = f[0]  # Not the carrier freq. but the first freq. in sweep
+    df = f[1]-f[0]
+
+    # Angle
+    a = (np.exp(-1j*2*np.pi*(1/lambda_) *
+         np.array([np.cos(theta), np.sin(theta)]).T@r))
+
+    # Delay
+    b = (np.exp(-1j*2*np.pi*np.arange(0, len(f))*tau*df) *
+         np.exp(-1j*2*np.pi*f0*tau))
+
+    # Return kronecker product
+    return np.kron(a, b).T
 
 
-def MUSIC(R, Res, M, L, r, f0):
+def MUSIC(R, Res, M, dat, idx_tau, idx_array):
+    # Parameters
+    Tau = dat['tau']
+    f = dat['f'][idx_tau]
+    f0 = dat['f0']
+    r = dat['r'][:, idx_array.reshape(len(idx_array))]
+
+    lambda_ = 3e8/f0
+
+    Theta = np.linspace(0, np.pi, Res)
+    Pm = np.zeros([Res, Res])
+
     # ------ Step 3 - Form U ------
     E, U = np.linalg.eig(R)
     Un = U[:, M:]
 
     # ------ Step 4 - Calculate Freq. estimate ------
-
-    # Create the sweep parameters
-    Theta = np.linspace(0, np.pi, Res)
-    # Tau = np.logspace(-9, -7, Res)
-    Tau = np.linspace(0, 1, Res)
-    Pm = np.zeros([Res, Res])
-
     # Do the caluclations
     for i in range(len(Theta)):
         for j in range(len(Tau)):
             # Calculate for the different steering matrix
-            As = delay_respons_vector(L, Theta[i], r, Tau[j], f0)
-
+            As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
+            print(np.shape(As))
             Ash = np.conjugate(As).T
             Unh = np.conjugate(Un).T
 
