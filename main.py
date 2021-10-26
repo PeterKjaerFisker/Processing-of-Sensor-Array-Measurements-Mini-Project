@@ -15,7 +15,8 @@ import functions as fun
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.io as pio
-pio.renderers.default='browser'
+
+pio.renderers.default = 'browser'
 
 # %% functions
 
@@ -23,7 +24,6 @@ pio.renderers.default='browser'
 # %% Main
 
 if __name__ == '__main__':
-
     # ---- Parameters ----
     Res = 10
 
@@ -60,19 +60,21 @@ if __name__ == '__main__':
     X_sub = X_sub.reshape(len(X_sub), 1)
 
     # Need to use spatial smoothing when usin MUSIC as rank is 1
-    R = X_sub@(np.conjugate(X_sub).T)
+    R = X_sub @ (np.conjugate(X_sub).T)
 
     # Do the MUSIC
     Pm = fun.MUSIC(R, Res, M, dat, idx_tau, idx_array)
 
     Theta = np.linspace(0, np.pi, Res)
 
-    fig2 = go.Figure(data=[go.Surface(z=Pm, x=dat['tau'],
-                                      y=Theta * 180 / np.pi)])
+    P2 = Pm * 1000
+    Tau = dat['tau'] * 1E6
+    Angles = Theta * 180 / np.pi
+    fig2 = go.Figure(data=[go.Surface(z=P2, x=Angles, y=Tau.reshape(len(Tau)))])
 
     fig2.update_layout(scene=dict(
-        xaxis_title='Azimuth Angle',
-        yaxis_title='Elevation Angle'),
+        xaxis_title='Azimuth Angle - degrees',
+        yaxis_title='Delay - micro-seconds'),
         title=f"Sweep - res: {Res}X{Res} points, SNR: {10}dB",
     )
 
