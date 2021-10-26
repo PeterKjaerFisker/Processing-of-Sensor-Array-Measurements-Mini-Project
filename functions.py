@@ -16,36 +16,82 @@ from scipy.signal import find_peaks
 
 
 # ---- Modified ----
-def delay_respons_vector(lambda_, theta, r, f0, tau):
-    return (np.exp(-1j*2*np.pi*(1/lambda_) *
-                   np.array([np.cos(theta), np.sin(theta)]).T@r) *
-            np.exp(-1j*f0*tau))
+def delay_respons_vector(theta, tau, r, f, lambda_):
+
+    # Parameters
+    f0 = f[0]  # Not the carrier freq. but the first freq. in sweep
+    df = f[1]-f[0]
+
+    # Angle
+    a = (np.exp(-1j*2*np.pi*(1/lambda_) *
+         np.array([np.cos(theta), np.sin(theta)]).T@r))
+
+    # Delay
+    b = (np.exp(-1j*2*np.pi*np.arange(0, len(f))*tau*df) *
+         np.exp(-1j*2*np.pi*f0*tau))
+
+    # Return kronecker product
+    return np.kron(a, b).T
 
 
-def MUSIC(R, Res, M, L, r, f0):
+def MUSIC(R, Res, M, dat, idx_tau, idx_array):
+    # Parameters
+    Tau = dat['tau']
+    f = dat['f'][idx_tau]
+    f0 = dat['f0']
+    r = dat['r'][:, idx_array.reshape(len(idx_array))]
+
+    lambda_ = 3e8/f0
+
+    Theta = np.linspace(0, np.pi, Res)
+    Pm = np.zeros([Res, Res])
+
     # ------ Step 3 - Form U ------
     E, U = np.linalg.eig(R)
     Un = U[:, M:]
 
     # ------ Step 4 - Calculate Freq. estimate ------
-
-    # Create the sweep parameters
-    Theta = np.linspace(0, np.pi, Res)
-    Tau = np.linspace(0, 1, Res)
-    Pm = np.zeros([Res, 1])
-
     # Do the caluclations
     for i in range(len(Theta)):
         for j in range(len(Tau)):
             # Calculate for the different steering matrix
-            As = delay_respons_vector(L, Theta[i], r, f0, Tau[j])
-
+            As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
+            print(np.shape(As))
             Ash = np.conjugate(As).T
             Unh = np.conjugate(Un).T
 
             Pm[i, j] = 1/np.abs(Ash@Un@Unh@As)
 
+            print(f"step {i*len(Tau) + j + 1} out of {Res*Res}")
+
     return Pm
+
+
+def getSubarray(N_row, N_column, L1, L2, spacing=1):
+    """
+    getSubarray gives you the index of the subarray of size L1 and L2 with
+    respect to N_row and N_column.
+    """
+
+    idx_column = np.arange(0, N_row, spacing
+                           ).reshape([int(N_row/spacing), 1])
+    idx_row = np.arange(0, N_column, spacing
+                        ).reshape([int(N_column/spacing), 1])
+
+    if (len(idx_column) < L1) or (len(idx_row) < L2):
+        print('Problem in finding the subarray')
+        exit()
+    else:
+        idx_column = idx_column[0:L1]
+        idx_row = idx_row[0:L2]
+
+    idx_array = np.zeros([L1*L2, 1], dtype=int)
+
+    for il2 in range(L2):
+        idx_array[il2*L1:(il2+1)*L1] = (idx_column +
+                                        N_row*(il2)*spacing)
+
+    return idx_array
 
 
 # ---- Old ----
