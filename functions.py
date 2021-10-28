@@ -34,7 +34,7 @@ def delay_respons_vector(theta, tau, r, f, lambda_):
     return np.kron(a, b).T
 
 
-def MUSIC(R, Res, M, dat, idx_tau, idx_array):
+def MUSIC(R, Res, dat, idx_tau, idx_array, M):
     # Parameters
     Tau = dat['tau']
     f = dat['f'][idx_tau]
@@ -59,6 +59,9 @@ def MUSIC(R, Res, M, dat, idx_tau, idx_array):
 
             Ash = np.conjugate(As).T
             Unh = np.conjugate(Un).T
+
+            print(np.shape(Un))
+            print(np.shape(As))
 
             Pm[i, j] = 1/np.abs(Ash@Un@Unh@As)
 
@@ -93,6 +96,88 @@ def getSubarray(N_row, N_column, L1, L2, spacing=1):
 
     return idx_array
 
+
+def spatialSmoothing(x, M, N, Ls, method=str):
+    # Split the signal array into P sub arays
+    # And calculate the forward covariance
+    RF = np.zeros([Ls, Ls], dtype=np.complex128)
+
+    for m in range(M):
+        for n in range(N):
+            xs = x[np.arange(m, m+Ls).reshape(Ls),
+                   np.arange(n, n+Ls).reshape(Ls),
+                   :]
+            xsh = np.conjugate(xs).T
+
+            RF += xs@xsh
+
+    RF = RF/(M*N)
+
+    # return forward
+    if method == "forward":
+        return RF
+
+    # Backward Selection Matrix
+    J_LS = np.flipud(np.eye(Ls))
+
+    # Calculate forward-backward covariance
+    return (1/2)*(RF+J_LS@np.conjugate(RF)@J_LS)
+
+
+def barlett(R, Res, dat, idx_tau, idx_array):
+    # Parameters
+    Tau = dat['tau']
+    f = dat['f'][idx_tau]
+    f0 = dat['f0']
+    r = dat['r'][:, idx_array.reshape(len(idx_array))]
+
+    lambda_ = 3e8/f0
+
+    Theta = np.linspace(0, np.pi, Res)
+    Pm = np.zeros([Res, len(Tau)])
+
+    # Do the caluclations
+    for i in range(len(Theta)):
+        for j in range(len(Tau)):
+            # Calculate for the different steering matrix
+            As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
+
+            Ash = np.conjugate(As).T
+
+            Pm[i, j] = np.abs(Ash@R@As)/np.linalg.norm(As)**4
+
+            print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
+
+    return Pm
+
+
+def capon(R, Res, dat, idx_tau, idx_array):
+    # Parameters
+    Tau = dat['tau']
+    f = dat['f'][idx_tau]
+    f0 = dat['f0']
+    r = dat['r'][:, idx_array.reshape(len(idx_array))]
+
+    lambda_ = 3e8/f0
+
+    Theta = np.linspace(0, np.pi, Res)
+    Pm = np.zeros([Res, len(Tau)])
+
+    # Do the caluclations
+    for i in range(len(Theta)):
+        for j in range(len(Tau)):
+            # Calculate for the different steering matrix
+            As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
+
+            Ash = np.conjugate(As).T
+
+            Rinv = np.linalg.inv(R)
+
+            Pm[i, j] = 1/np.abs(Ash@Rinv@As)
+
+            print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
+
+    return Pm
 
 # ---- Old ----
 def steering_matrix_1d(L, theta, d, lambda_):
