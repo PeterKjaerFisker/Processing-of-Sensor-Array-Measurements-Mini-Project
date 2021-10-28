@@ -124,6 +124,35 @@ def spatialSmoothing(x, M, N, Ls, method=str):
     return (1/2)*(RF+J_LS@np.conjugate(RF)@J_LS)
 
 
+def barlettRA(X, Res, dat, idx_tau, idx_array):
+    # Parameters
+    Tau = dat['tau']
+    f0 = dat['f0']
+    r = dat['r'][:, idx_array.reshape(len(idx_array))]
+
+    aoa_search = np.linspace(0, 2*np.pi, Res)
+    DTFT_aoa = np.zeros([Res, len(idx_array)])
+
+    for im in range(Res):
+        DTFT_aoa[im, :] = np.exp(-1j*2*np.pi*(f0/3e8) * np.array(
+                                 [np.cos(aoa_search[im]),
+                                  np.sin(aoa_search[im])]).T@r)
+
+    K = Res
+    tau_search = np.linspace(0, 1, K)
+    f_tau = np.arange(0, len(Tau))
+
+    DTFTconj_delay = np.zeros([len(Tau), K])
+
+    for ik in range(K):
+        DTFTconj_delay[:, ik] = np.exp(1j*2*np.pi*f_tau*tau_search[ik])
+
+    print(np.shape(DTFT_aoa))
+    print(np.shape(X))
+    print(np.shape(DTFTconj_delay))
+
+    return np.abs(DTFT_aoa@X@DTFTconj_delay)
+
 def barlett(R, Res, dat, idx_tau, idx_array):
     # Parameters
     Tau = dat['tau']

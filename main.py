@@ -26,7 +26,7 @@ pio.renderers.default = 'browser'
 
 if __name__ == '__main__':
     # ---- Parameters ----
-    Res = 10
+    Res = 300
 
     L2d = [71, 66]
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     R = X_sub @ (np.conjugate(X_sub).T)
 
     # Do the MUSIC
-    Pm = fun.capon(R, Res, dat, idx_tau, idx_array)
+    Pm = fun.barlettRA(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res)
