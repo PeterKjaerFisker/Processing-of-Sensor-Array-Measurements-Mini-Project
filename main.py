@@ -26,7 +26,7 @@ pio.renderers.default = 'browser'
 
 if __name__ == '__main__':
     # ---- Parameters ----
-    Res = 300
+    Res = 10
 
     L2d = [71, 66]
 
@@ -67,30 +67,44 @@ if __name__ == '__main__':
     X_sub = X_sub.reshape(len(X_sub), 1)
 
     # ----- Spatial Smoothing -----
-    # Number of subarrays
-    P = np.prod(L1*L2*len(idx_tau)) - Ls + 1
-
-    # RFB = fun.spatialSmoothing(X_sub, P, Ls)
-
+    print("smooth start")
+    RFB = fun.spatialSmoothing(X_sub,
+                               np.array([L1, L2, len(idx_tau)]),
+                               np.array([4, 4, len(idx_tau)]))
+    print("smooth done")
     # Need to use spatial smoothing when usin MUSIC as rank is 1
-    R = X_sub @ (np.conjugate(X_sub).T)
+    # R = X_sub @ (np.conjugate(X_sub).T)
 
     # Do the MUSIC
+    print("RA")
     Pm = fun.barlettRA(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
+
+    print("MUSIC")
+    PmM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array, M)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res)
-
+    
     if plot == 1:
         plt.figure()
-        plt.title(f"Sweep - res: {Res}, SNR: {10}db")
-        plt.imshow(Pm, norm=LogNorm(),
-                   extent=[np.min(dat['tau']), np.max(dat['tau']),
-                           0, np.pi],
+        plt.title(f"PM - Sweep - res: {Res}, SNR: {10}db")
+        plt.imshow(Pm.T, norm=LogNorm(),
+                   extent=[0, 360,
+                           np.min(dat['tau']), np.max(dat['tau'])],
                    aspect="auto")
         plt.colorbar()
-        plt.xlabel("Tau [s]")
-        plt.ylabel("Theta [rad]")
+        plt.ylabel("Tau [s]")
+        plt.xlabel("Theta [rad]")
+
+        plt.figure()
+        plt.title(f"PMM - Sweep - res: {Res}, SNR: {10}db")
+        plt.imshow(PmM.T, norm=LogNorm(),
+                   extent=[0, 360,
+                           np.min(dat['tau']), np.max(dat['tau'])],
+                   aspect="auto")
+        plt.colorbar()
+        plt.ylabel("Tau [s]")
+        plt.xlabel("Theta [rad]")
 
     elif plot == 2:
         P2 = Pm * 1000
@@ -106,5 +120,5 @@ if __name__ == '__main__':
         )
 
         fig2.show()
-
+    
     print("Hello World")  # Prints "Hello World"

@@ -27,8 +27,12 @@ def delay_respons_vector(theta, tau, r, f, lambda_):
          np.array([np.cos(theta), np.sin(theta)]).T@r))
 
     # Delay
+    """
     b = (np.exp(-1j*2*np.pi*np.arange(0, len(f))*tau*df) *
          np.exp(-1j*2*np.pi*f0*tau))
+    """
+
+    b = (np.exp(-1j*2*np.pi*f*tau)).reshape(len(f))
 
     # Return kronecker product
     return np.kron(a, b).T
@@ -59,9 +63,6 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
 
             Ash = np.conjugate(As).T
             Unh = np.conjugate(Un).T
-
-            print(np.shape(Un))
-            print(np.shape(As))
 
             Pm[i, j] = 1/np.abs(Ash@Un@Unh@As)
 
@@ -97,28 +98,37 @@ def getSubarray(N_row, N_column, L1, L2, spacing=1):
     return idx_array
 
 
-def spatialSmoothing(x, M, N, Ls, method=str):
+def spatialSmoothing(x, L, Ls, method=str):
+    """
+    L = [Lx, Ly, Lz]
+    Ls = [Lsx, Lsy, Lsz]
+    """
     # Split the signal array into P sub arays
     # And calculate the forward covariance
-    RF = np.zeros([Ls, Ls], dtype=np.complex128)
+    x_cube = x.reshape(L)
 
-    for m in range(M):
-        for n in range(N):
-            xs = x[np.arange(m, m+Ls).reshape(Ls),
-                   np.arange(n, n+Ls).reshape(Ls),
-                   :]
-            xsh = np.conjugate(xs).T
+    Px, Py, Pz = L - Ls + 1
 
-            RF += xs@xsh
+    RF = np.zeros([np.prod(Ls), np.prod(Ls)], dtype=np.complex128)
 
-    RF = RF/(M*N)
+    for px in range(Px):
+        for py in range(Py):
+            for pz in range(Pz):
+                xs = x_cube[px:(px+Ls[0]),
+                            py:(py+Ls[1]),
+                            pz:(pz+Ls[2])].flatten()
+                xsh = np.conjugate(xs).T
+
+                RF += xs@xsh
+
+    RF = RF/(Px*Py*Pz)
 
     # return forward
     if method == "forward":
         return RF
 
     # Backward Selection Matrix
-    J_LS = np.flipud(np.eye(Ls))
+    J_LS = np.flipud(np.eye(np.prod(Ls)))
 
     # Calculate forward-backward covariance
     return (1/2)*(RF+J_LS@np.conjugate(RF)@J_LS)
@@ -131,27 +141,24 @@ def barlettRA(X, Res, dat, idx_tau, idx_array):
     r = dat['r'][:, idx_array.reshape(len(idx_array))]
 
     aoa_search = np.linspace(0, 2*np.pi, Res)
-    DTFT_aoa = np.zeros([Res, len(idx_array)])
+    DTFT_aoa = np.zeros([Res, len(idx_array)], dtype=np.complex128)
 
     for im in range(Res):
         DTFT_aoa[im, :] = np.exp(-1j*2*np.pi*(f0/3e8) * np.array(
                                  [np.cos(aoa_search[im]),
                                   np.sin(aoa_search[im])]).T@r)
 
-    K = Res
+    K = 300
     tau_search = np.linspace(0, 1, K)
     f_tau = np.arange(0, len(Tau))
 
-    DTFTconj_delay = np.zeros([len(Tau), K])
+    DTFTconj_delay = np.zeros([len(Tau), K], dtype=np.complex128)
 
     for ik in range(K):
         DTFTconj_delay[:, ik] = np.exp(1j*2*np.pi*f_tau*tau_search[ik])
 
-    print(np.shape(DTFT_aoa))
-    print(np.shape(X))
-    print(np.shape(DTFTconj_delay))
-
     return np.abs(DTFT_aoa@X@DTFTconj_delay)
+
 
 def barlett(R, Res, dat, idx_tau, idx_array):
     # Parameters
@@ -173,7 +180,7 @@ def barlett(R, Res, dat, idx_tau, idx_array):
 
             Ash = np.conjugate(As).T
 
-            Pm[i, j] = np.abs(Ash@R@As)/np.linalg.norm(As)**4
+            Pm[i, j] = np.abs(Ash@R@As)/(np.linalg.norm(As)**4)
 
             print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
 
