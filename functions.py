@@ -47,7 +47,7 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
 
     lambda_ = 3e8/f0
 
-    Theta = np.linspace(0, np.pi, Res)
+    Theta = np.linspace(0, 2*np.pi, Res)
     Pm = np.zeros([Res, len(Tau)])
 
     # ------ Step 3 - Form U ------
@@ -105,7 +105,7 @@ def spatialSmoothing(x, L, Ls, method=str):
     """
     # Split the signal array into P sub arays
     # And calculate the forward covariance
-    x_cube = x.reshape(L)
+    x_cube = x.reshape(L, order='F')
 
     Px, Py, Pz = L - Ls + 1
 
@@ -116,7 +116,7 @@ def spatialSmoothing(x, L, Ls, method=str):
             for pz in range(Pz):
                 xs = x_cube[px:(px+Ls[0]),
                             py:(py+Ls[1]),
-                            pz:(pz+Ls[2])].flatten()
+                            pz:(pz+Ls[2])].flatten(order='F')
                 xsh = np.conjugate(xs).T
 
                 RF += xs@xsh

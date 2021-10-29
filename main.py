@@ -26,20 +26,20 @@ pio.renderers.default = 'browser'
 
 if __name__ == '__main__':
     # ---- Parameters ----
-    Res = 10
+    Res = 40
 
     L2d = [71, 66]
 
     M = 5
 
     # Sub array lengths
-    Ls = 10
+    Ls = 40
 
     # For : getSubarray
     N_row = 71
     N_column = 66
-    L1 = 4
-    L2 = 4
+    L1 = 10
+    L2 = 10
 
     # plot
     plot = 1
@@ -64,14 +64,16 @@ if __name__ == '__main__':
 
     # We need a L*Lf vector. Need to flatten it columnmajor (Fortran)
     X_sub = X[idx_array, idx_tau].flatten(order='F')
-    X_sub = X_sub.reshape(len(X_sub), 1)
+    X_sub = X_sub.reshape(len(X_sub), 1, order='F')
 
     # ----- Spatial Smoothing -----
     print("smooth start")
     RFB = fun.spatialSmoothing(X_sub,
                                np.array([L1, L2, len(idx_tau)]),
-                               np.array([4, 4, len(idx_tau)]))
+                               np.array([4, 4, 101]))
     print("smooth done")
+    idx_array_v2 = fun.getSubarray(L1, L2, 4, 4, 1)
+
     # Need to use spatial smoothing when usin MUSIC as rank is 1
     # R = X_sub @ (np.conjugate(X_sub).T)
 
@@ -80,7 +82,7 @@ if __name__ == '__main__':
     Pm = fun.barlettRA(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
 
     print("MUSIC")
-    PmM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array, M)
+    PmM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res)
