@@ -26,20 +26,13 @@ pio.renderers.default = 'browser'
 
 if __name__ == '__main__':
     # ---- Parameters ----
-    Res = 40
-
-    L2d = [71, 66]
+    Res = 20
 
     M = 5
 
-    # Sub array lengths
-    Ls = 40
-
-    # For : getSubarray
-    N_row = 71
-    N_column = 66
-    L1 = 10
-    L2 = 10
+    # For: getSubarray
+    L1 = 10  # Number of sub rows
+    L2 = 10  # Number of sub columns
 
     # plot
     plot = 1
@@ -47,17 +40,12 @@ if __name__ == '__main__':
     # ---- Initialise data ----
     # Load datafile
     dat = scio.loadmat("data.mat")
-    f = dat["f"]
-
-    f0 = dat['f0']
-
-    # Time domain:
-    x = dat['x_synthetic']
 
     # Freq. domain
     X = dat['X_synthetic']
 
-    idx_array = fun.getSubarray(N_row, N_column, L1, L2, 1)
+    # Index data vector for antennas in subarray
+    idx_array = fun.getSubarray(L1, L2, 2)
 
     # How many freq. points we want to look at
     idx_tau = np.arange(0, np.size(dat['tau'], axis=0))
@@ -67,46 +55,50 @@ if __name__ == '__main__':
     X_sub = X_sub.reshape(len(X_sub), 1, order='F')
 
     # ----- Spatial Smoothing -----
+    """
     print("smooth start")
     RFB = fun.spatialSmoothing(X_sub,
                                np.array([L1, L2, len(idx_tau)]),
-                               np.array([4, 4, 101]))
+                               np.array([6, 6, 101]))
     print("smooth done")
-    idx_array_v2 = fun.getSubarray(L1, L2, 4, 4, 1)
-
-    # Need to use spatial smoothing when usin MUSIC as rank is 1
-    # R = X_sub @ (np.conjugate(X_sub).T)
+    idx_array_v2 = fun.getSubarray(L1, L2, 6, 6, 1)
+    """
+    # Need to use spatial smoothing when using MUSIC as rank is 1
+    R = X_sub @ (np.conjugate(X_sub).T)
 
     # Do the MUSIC
     print("RA")
     Pm = fun.barlettRA(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
+    # PmM = fun.test(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
 
     print("MUSIC")
-    PmM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
+    # PmMM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
+    PmMM = fun.barlett(R, Res, dat, idx_tau, idx_array)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res)
-    
+
     if plot == 1:
         plt.figure()
-        plt.title(f"PM - Sweep - res: {Res}, SNR: {10}db")
-        plt.imshow(Pm.T, norm=LogNorm(),
+        plt.title(f"PM - Sweep - res: {Res}")
+        plt.imshow(np.abs(Pm.T), norm=LogNorm(),
                    extent=[0, 360,
                            np.min(dat['tau']), np.max(dat['tau'])],
                    aspect="auto")
         plt.colorbar()
         plt.ylabel("Tau [s]")
-        plt.xlabel("Theta [rad]")
+        plt.xlabel("Theta [degrees]")
 
         plt.figure()
-        plt.title(f"PMM - Sweep - res: {Res}, SNR: {10}db")
-        plt.imshow(PmM.T, norm=LogNorm(),
-                   extent=[0, 360,
+        plt.title(f"Barlett- Sweep - res: {Res}")
+        plt.imshow(PmMM.T, norm=LogNorm(),
+                   extent=[-180, 180,
                            np.min(dat['tau']), np.max(dat['tau'])],
+                   vmin = 0.1, 
                    aspect="auto")
         plt.colorbar()
         plt.ylabel("Tau [s]")
-        plt.xlabel("Theta [rad]")
+        plt.xlabel("Theta [degrees]")
 
     elif plot == 2:
         P2 = Pm * 1000
@@ -118,9 +110,9 @@ if __name__ == '__main__':
         fig2.update_layout(scene=dict(
             xaxis_title='Azimuth Angle - degrees',
             yaxis_title='Delay - micro-seconds'),
-            title=f"Sweep - res: {Res}X{Res} points, SNR: {10}dB",
+            title=f"Sweep - res: {Res}X{Res} points",
         )
 
         fig2.show()
-    
+
     print("Hello World")  # Prints "Hello World"

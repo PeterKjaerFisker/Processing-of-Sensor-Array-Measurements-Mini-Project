@@ -17,25 +17,15 @@ from scipy.signal import find_peaks
 
 # ---- Modified ----
 def delay_respons_vector(theta, tau, r, f, lambda_):
-
-    # Parameters
-    f0 = f[0]  # Not the carrier freq. but the first freq. in sweep
-    df = f[1]-f[0]
-
     # Angle
-    a = (np.exp(-1j*2*np.pi*(1/lambda_) *
+    a = (np.exp(-2j*np.pi*(1/lambda_) *
          np.array([np.cos(theta), np.sin(theta)]).T@r))
 
     # Delay
-    """
-    b = (np.exp(-1j*2*np.pi*np.arange(0, len(f))*tau*df) *
-         np.exp(-1j*2*np.pi*f0*tau))
-    """
-
-    b = (np.exp(-1j*2*np.pi*f*tau)).reshape(len(f))
+    b = (np.exp(-2j*np.pi*f*tau)).reshape(len(f))
 
     # Return kronecker product
-    return np.kron(a, b).T
+    return np.kron(b, a).T
 
 
 def MUSIC(R, Res, dat, idx_tau, idx_array, M):
@@ -71,16 +61,18 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
     return Pm
 
 
-def getSubarray(N_row, N_column, L1, L2, spacing=1):
+def getSubarray(L1, L2, spacing=1):
     """
     getSubarray gives you the index of the subarray of size L1 and L2 with
     respect to N_row and N_column.
     """
+    N_row = 71
+    N_column = 66
 
     idx_column = np.arange(0, N_row, spacing
-                           ).reshape([int(N_row/spacing), 1])
+                           ).reshape([int(np.ceil(N_row/spacing)), 1])
     idx_row = np.arange(0, N_column, spacing
-                        ).reshape([int(N_column/spacing), 1])
+                        ).reshape([int(np.ceil(N_column/spacing)), 1])
 
     if (len(idx_column) < L1) or (len(idx_row) < L2):
         print('Problem in finding the subarray')
@@ -169,11 +161,12 @@ def barlett(R, Res, dat, idx_tau, idx_array):
 
     lambda_ = 3e8/f0
 
-    Theta = np.linspace(0, np.pi, Res)
+    Theta = np.linspace(0, 2*np.pi, Res)
     Pm = np.zeros([Res, len(Tau)])
 
     # Do the caluclations
     for i in range(len(Theta)):
+        print(i)
         for j in range(len(Tau)):
             # Calculate for the different steering matrix
             As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
@@ -182,7 +175,7 @@ def barlett(R, Res, dat, idx_tau, idx_array):
 
             Pm[i, j] = np.abs(Ash@R@As)/(np.linalg.norm(As)**4)
 
-            print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
+            # print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
 
     return Pm
 
@@ -290,3 +283,25 @@ def ESPRIT(R, Res, M, L2d):
     phi = np.arcsin(np.abs(u+1j*v))
 
     return theta, phi
+
+
+def test(X, Res, dat, idx_tau, idx_array):
+
+    Tau = dat['tau']
+    f = dat['f'][idx_tau]
+    # Tau = np.linspace(0, 1, 300).reshape([300, 1])
+    # f = np.arange(0, 101).reshape([101, 1])
+    f0 = dat['f0']
+    r = dat['r'][:, idx_array.reshape(len(idx_array))]
+
+    lambda_ = 3e8/f0
+
+    Theta = np.linspace(0, 2*np.pi, Res)
+
+    a = (np.exp(-1j*2*np.pi*(1/lambda_) *
+         np.array([np.cos(Theta), np.sin(Theta)]).T@r))
+
+    b = (np.exp(-1j*2*np.pi*f@Tau.T))
+
+    return a@X@np.conjugate(b)
+
