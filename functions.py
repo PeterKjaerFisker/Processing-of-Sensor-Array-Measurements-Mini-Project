@@ -108,7 +108,7 @@ def spatialSmoothing(x, L, Ls, method=str):
     """
     # Split the signal array into P sub arays
     # And calculate the forward covariance
-    x_cube = x.reshape(L, order='F')
+    #x_cube = x.reshape(L, order='F')
 
     Px, Py, Pz = L - Ls + 1
 
@@ -117,9 +117,12 @@ def spatialSmoothing(x, L, Ls, method=str):
     for px in range(Px):
         for py in range(Py):
             for pz in range(Pz):
-                xs = x_cube[px:(px+Ls[0]),
-                            py:(py+Ls[1]),
-                            pz:(pz+Ls[2])].flatten(order='F')
+                idx_array = getSubarray(L, Ls, offset=[px, py, pz], spacing=1)
+                xs = x[idx_array[0], idx_array[1]].flatten(order='F')
+                xs = np.reshape(xs,(len(xs),1))
+                # xs = x_cube[px:(px+Ls[0]),
+                #             py:(py+Ls[1]),
+                #             pz:(pz+Ls[2])].flatten(order='F')
                 xsh = np.conjugate(xs).T
 
                 RF += xs@xsh
@@ -128,6 +131,7 @@ def spatialSmoothing(x, L, Ls, method=str):
 
     # return forward
     if method == "forward":
+        print("JEG SKRIDER HER")
         return RF
 
     # Backward Selection Matrix

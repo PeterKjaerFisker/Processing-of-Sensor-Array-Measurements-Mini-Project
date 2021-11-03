@@ -35,12 +35,13 @@ if __name__ == '__main__':
     freq_samples = 101
 
     # For: getSubarray
-    L1 = 6  # Number of sub rows
-    L2 = 6  # Number of sub columns
-    L3 = 101  # Number of sub samples
-
-    array_size = [N_row, N_column, freq_samples]
-    subarray_size = [L1, L2, L3]
+    L1 = 15  # Number of sub rows
+    L2 = 15  # Number of sub columns
+    L3 = 20  # Number of sub samples
+    
+    array_size =  np.array([N_row, N_column, freq_samples])
+    subarray_size = np.array([L1, L2, L3])
+    smoothing_array_size =  np.array([6, 6, 10])
 
     tau_search = [0, 5e-7]
 
@@ -62,21 +63,20 @@ if __name__ == '__main__':
     idx_array = fun.getSubarray(array_size, subarray_size, offset = [0,0,0], spacing=2)
 
     # We need a L*Lf vector. Need to flatten it columnmajor (Fortran)
-    X_sub = X[idx_array[0], idx_array[1]].flatten(order='F')
-    X_sub = X_sub.reshape(len(X_sub), 1, order='F')
+    X_sub = X[idx_array[0], idx_array[1]]#.flatten(order='F')
+    #X_sub = X_sub.reshape(len(X_sub), 1, order='F')
 
     # ----- Spatial Smoothing -----
-    """
     print("smooth start")
     RFB = fun.spatialSmoothing(X_sub,
-                               np.array([L1, L2, len(idx_tau)]),
-                               np.array([6, 6, 101]))
+                               subarray_size,
+                               smoothing_array_size)
     print("smooth done")
-    idx_array_v2 = fun.getSubarray(L1, L2, 6, 6, 1)
-    """
+    #idx_array_v2 = fun.getSubarray(L1, L2, 6, 6, 1)
+    
     # Need to use spatial smoothing when using MUSIC as rank is 1
+    X_sub = X_sub.flatten(order='F').reshape(len(X_sub.flatten(order='F')), 1, order='F')
     R = X_sub @ (np.conjugate(X_sub).T)
-
     # Do the MUSIC
     #print("RA")
     #Pm = fun.barlettRA(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
@@ -84,8 +84,9 @@ if __name__ == '__main__':
 
     print("MUSIC")
     # PmMM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
-    # Pm_Capon = fun.capon(R, Res, dat, idx_tau, idx_array)
-    Pm_Barlett = fun.barlett(R, Res, dat, idx_array[1], idx_array[0], tau_search)
+    idx_subarray = fun.getSubarray(array_size, smoothing_array_size, offset = [0,0,0], spacing=2)
+    Pm_Capon = fun.capon(RFB, Res, dat, idx_subarray[1], idx_subarray[0])
+    #Pm_Barlett = fun.barlett(R, Res, dat, idx_array[1], idx_array[0], tau_search)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res[0])
