@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # %% Plot
     Theta = np.linspace(0, np.pi, Res[0])
     AoA = (dat['smc_param'][0][0][1])*180/np.pi
-    DoA = (dat['smc_param'][0][0][2])*(1/3e8) + 1.64e-7
+    TDoA = (dat['smc_param'][0][0][2])*(1/3e8) + np.abs(dat['tau'][0])
 
     if plot == 1:
         """
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         """
         plt.figure()
         plt.title(f"Barlett- Sweep - res: {Res}")
-        plt.scatter(AoA, DoA, color='r', marker='x')
+        plt.scatter(AoA, TDoA, color='r', marker='x')
         pm_max = np.max(10*np.log10(Pm_Barlett.T))
         # pm_max = 20
         plt.imshow(10*np.log10(Pm_Barlett), vmin=pm_max-40, vmax=pm_max,
