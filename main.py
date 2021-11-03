@@ -79,14 +79,20 @@ if __name__ == '__main__':
 
     # Do the Algorithms
     print("Algorithms")
-    # PmMM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
     idx_subarray = fun.getSubarray(array_size, smoothing_array_size,
                                    offset=[0, 0, 0], spacing=2)
+
+    print("Capon")
     Pm_Capon = fun.capon(RFB, Res, dat, idx_subarray[1],
                          idx_subarray[0], tau_search)
 
+    print("Barlett")
     Pm_Barlett = fun.barlett(R, Res, dat, idx_array[1],
                              idx_array[0], tau_search)
+
+    print("MUSIC")
+    Pm_MUSIC = fun.MUSIC(RFB, Res, dat, idx_subarray[1],
+                         idx_subarray[0], M, tau_search)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res[0])
@@ -120,12 +126,27 @@ if __name__ == '__main__':
         plt.ylabel("Tau [s]")
         plt.xlabel("Theta [degrees]")
 
+        plt.figure()
+        plt.title(f"MUSIC- Sweep - res: {Res}")
+        plt.scatter(AoA, TDoA, color='r', marker='x')
+        pm_max = np.max(10*np.log10(Pm_MUSIC))
+        # pm_max = 20
+        plt.imshow(10*np.log10(Pm_MUSIC), vmin=pm_max-40, vmax=pm_max,
+                   extent=[-180, 180,
+                           tau_search[0], tau_search[1]],
+                   aspect="auto", origin="lower")
+        plt.colorbar()
+        plt.ylabel("Tau [s]")
+        plt.xlabel("Theta [degrees]")
+
     elif plot == 2:
-        P2 = Pm * 1000
-        Tau = dat['tau'] * 1E6
-        Angles = Theta * 180 / np.pi
-        fig2 = go.Figure(data=[go.Surface(z=P2, x=Angles,
-                                          y=Tau.reshape(len(Tau)))])
+        x = np.linspace(-180, 180, Res[0])
+        y = np.linspace(tau_search[0], tau_search[1], Res[1], endpoint=True)
+        z = 10*np.log10(Pm_MUSIC)
+
+        x, y = np.meshgrid(x, y)
+        fig2 = go.Figure(data=[go.Surface(z=z, x=x,
+                                          y=y)])
 
         fig2.update_layout(scene=dict(
             xaxis_title='Azimuth Angle - degrees',
@@ -136,21 +157,10 @@ if __name__ == '__main__':
         fig2.show()
 
     print("Hello World")  # Prints "Hello World"
-"""
-        plt.figure()
-        plt.title(f"Barlett- Sweep - res: {Res}")
-        plt.imshow(Pm_Barlett.T, norm=LogNorm(vmin=0.01),
-                   extent=[-180, 180,
-                           np.min(dat['tau']), np.max(dat['tau'])],
-                   aspect="auto")
-        plt.colorbar()
-        plt.ylabel("Tau [s]")
-        plt.xlabel("Theta [degrees]")
 
-"""
 
 # %%
-if plot == 1:
+if plot == 3:
     from matplotlib import cm
     x = np.linspace(-180, 180, Res[0])
     y = np.linspace(tau_search[0], tau_search[1], Res[1], endpoint=True)
