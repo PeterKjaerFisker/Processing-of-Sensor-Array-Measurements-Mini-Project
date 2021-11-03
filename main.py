@@ -26,7 +26,7 @@ pio.renderers.default = 'browser'
 
 if __name__ == '__main__':
     # ---- Parameters ----
-    Res = 100
+    Res = [100, 100]  # Res for [theta, tau]
 
     M = 5
 
@@ -34,10 +34,10 @@ if __name__ == '__main__':
     N_column = 66
 
     # For: getSubarray
-    L1 = 4  # Number of sub rows
-    L2 = 4  # Number of sub columns
+    L1 = 10  # Number of sub rows
+    L2 = 10  # Number of sub columns
 
-    tau_search = [0.5e-8, 5e-8]
+    tau_search = [1.5e-7, 2.5e-7]
 
     # plot
     plot = 1
@@ -82,9 +82,9 @@ if __name__ == '__main__':
     Pm_Barlett = fun.barlett(R, Res, dat, idx_tau, idx_array, tau_search)
 
     # %% Plot
-    Theta = np.linspace(0, np.pi, Res)
+    Theta = np.linspace(0, np.pi, Res[0])
     AoA = (dat['smc_param'][0][0][1])*180/np.pi
-    DoA = (dat['smc_param'][0][0][2])*(1/3e8)
+    DoA = (dat['smc_param'][0][0][2])*(1/3e8) + 1.64e-7
 
     if plot == 1:
         """
@@ -100,12 +100,13 @@ if __name__ == '__main__':
         """
         plt.figure()
         plt.title(f"Barlett- Sweep - res: {Res}")
-        plt.scatter(AoA,DoA, color='r', marker='x')
+        plt.scatter(AoA, DoA, color='r', marker='x')
         pm_max = np.max(10*np.log10(Pm_Barlett.T))
-        plt.imshow(10*np.log10(Pm_Barlett.T), vmin=pm_max-40, vmax=pm_max,
+        # pm_max = 20
+        plt.imshow(10*np.log10(Pm_Barlett), vmin=pm_max-40, vmax=pm_max,
                    extent=[-180, 180,
                            tau_search[0], tau_search[1]],
-                   aspect="auto")
+                   aspect="auto", origin="lower")
         plt.colorbar()
         plt.ylabel("Tau [s]")
         plt.xlabel("Theta [degrees]")
@@ -126,7 +127,6 @@ if __name__ == '__main__':
         fig2.show()
 
     print("Hello World")  # Prints "Hello World"
-    
 """
         plt.figure()
         plt.title(f"Barlett- Sweep - res: {Res}")
@@ -139,3 +139,19 @@ if __name__ == '__main__':
         plt.xlabel("Theta [degrees]")
 
 """
+
+# %%
+if plot == 1:
+    from matplotlib import cm
+    x = np.linspace(-180, 180, Res[0])
+    y = np.linspace(tau_search[0], tau_search[1], Res[1], endpoint=True)
+    z = 10*np.log10(Pm_Barlett)
+
+    x, y = np.meshgrid(x, y)
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.plot_surface(x, y, z, cmap=cm.coolwarm)
+    plt.ylabel("Tau [s]")
+    plt.xlabel("Theta [degrees]")
+    plt.show()

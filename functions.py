@@ -18,7 +18,7 @@ from scipy.signal import find_peaks
 # ---- Modified ----
 def delay_respons_vector(theta, tau, r, f, lambda_):
     # Angle
-    e = np.array([np.cos(theta), np.sin(theta)])
+    e = np.matrix([np.cos(theta), np.sin(theta)])
 
     a = (np.exp(-2j*np.pi*(1/lambda_) * e@r)).T
 
@@ -38,8 +38,8 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
 
     lambda_ = 3e8/f0
 
-    Theta = np.linspace(0, 2*np.pi, Res)
-    Pm = np.zeros([Res, len(Tau)])
+    Theta = np.linspace(0, 2*np.pi, Res[0])
+    Pm = np.zeros([Res[0], len(Tau)])
 
     # ------ Step 3 - Form U ------
     E, U = np.linalg.eig(R)
@@ -61,6 +61,14 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
             # print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
 
     return Pm
+
+
+def estM(E, N, pn):
+    p = np.arange(1, pn+1).reshape([1, pn])
+
+    MMDL = N*np.log(E[np.arange(pn)])+(1/2)*(p**2 + p)*np.log(N)
+
+    return np.argmin(MMDL) + 1
 
 
 def getSubarray(Outer_dimx, Outer_dimy, Inner_dimx, Inner_dimy, spacing=1):
@@ -133,10 +141,10 @@ def barlettRA(X, Res, dat, idx_tau, idx_array):
     f0 = dat['f0']
     r = dat['r'][:, idx_array.reshape(len(idx_array))]
 
-    aoa_search = np.linspace(0, 2*np.pi, Res)
-    DTFT_aoa = np.zeros([Res, len(idx_array)], dtype=np.complex128)
+    aoa_search = np.linspace(0, 2*np.pi, Res[0])
+    DTFT_aoa = np.zeros([Res[0], len(idx_array)], dtype=np.complex128)
 
-    for im in range(Res):
+    for im in range(Res[0]):
         DTFT_aoa[im, :] = np.exp(-1j*2*np.pi*(f0/3e8) * np.array(
                                  [np.cos(aoa_search[im]),
                                   np.sin(aoa_search[im])]).T@r)
@@ -155,26 +163,29 @@ def barlettRA(X, Res, dat, idx_tau, idx_array):
 
 def barlett(R, Res, dat, idx_tau, idx_array, tau_search):
     # Parameters
-    Tau = np.linspace(tau_search[0], tau_search[1], Res)
+    Tau = np.linspace(tau_search[0], tau_search[1], Res[1], endpoint=True)
     f = dat['f'][idx_tau]
-    f0 = dat['f0']
+    f0 = dat['f0'][0, 0]
     r = dat['r'][:, idx_array.reshape(len(idx_array))]
 
     lambda_ = 3e8/f0
 
-    Theta = np.linspace(0, 2*np.pi, Res)
-    Pm = np.zeros([Res, len(Tau)])
+    Theta = np.linspace(0, 2*np.pi, Res[0])
+    Pm = np.zeros([Res[0], Res[1]])
 
     # Do the caluclations
     for i in range(len(Theta)):
         print(i)
         for j in range(len(Tau)):
+            As = np.zeros([len(f)*np.size(r, axis=1), 1], dtype=np.complex)
+            Ash = np.zeros([1, len(f)*np.size(r, axis=1)], dtype=np.complex)
+
             # Calculate for the different steering matrix
             As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
 
             Ash = np.conjugate(As).T
 
-            Pm[i, j] = np.abs(Ash@R@As)/(np.linalg.norm(As)**4)
+            Pm[j, i] = np.abs(Ash@R@As)/(np.linalg.norm(As, ord=2)**4)
 
             # print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
 
