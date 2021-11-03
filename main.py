@@ -28,16 +28,26 @@ if __name__ == '__main__':
     # ---- Parameters ----
     Res = [100, 100]  # Res for [theta, tau]
 
+    # Number of sources
     M = 5
 
+    # Matrix dim. of given data
     N_row = 71
     N_column = 66
+    freq_samples = 101
 
     # For: getSubarray
-    L1 = 10  # Number of sub rows
-    L2 = 10  # Number of sub columns
+    L1 = 15  # Number of sub rows
+    L2 = 15  # Number of sub columns
+    L3 = 20  # Number of sub samples
 
-    tau_search = [1.5e-7, 2.5e-7]
+    # Get the index for the subarrays
+    array_size = np.array([N_row, N_column, freq_samples])
+    subarray_size = np.array([L1, L2, L3])
+    smoothing_array_size = np.array([6, 6, 10])
+
+    # Search Space
+    tau_search = [0, 5e-7]
 
     # plot
     plot = 1
@@ -50,36 +60,33 @@ if __name__ == '__main__':
     X = dat['X_synthetic']
 
     # Index data vector for antennas in subarray
-    idx_array = fun.getSubarray(N_row, N_column, L1, L2, 2)
-
-    # How many freq. points we want to look at
-    idx_tau = np.arange(0, np.size(dat['tau'], axis=0))
+    idx_array = fun.getSubarray(array_size, subarray_size,
+                                offset=[0, 0, 0], spacing=2)
 
     # We need a L*Lf vector. Need to flatten it columnmajor (Fortran)
-    X_sub = X[idx_array, idx_tau].flatten(order='F')
-    X_sub = X_sub.reshape(len(X_sub), 1, order='F')
+    X_sub = X[idx_array[0], idx_array[1]]
 
     # ----- Spatial Smoothing -----
-    """
     print("smooth start")
     RFB = fun.spatialSmoothing(X_sub,
-                               np.array([L1, L2, len(idx_tau)]),
-                               np.array([6, 6, 101]))
-    print("smooth done")
-    idx_array_v2 = fun.getSubarray(L1, L2, 6, 6, 1)
-    """
+                               subarray_size,
+                               smoothing_array_size)
+
     # Need to use spatial smoothing when using MUSIC as rank is 1
+    X_sub = X_sub.flatten(order='F').reshape(
+        len(X_sub.flatten(order='F')), 1, order='F')
     R = X_sub @ (np.conjugate(X_sub).T)
 
-    # Do the MUSIC
-    print("RA")
-    Pm = fun.barlettRA(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
-    # PmM = fun.test(X[idx_array, idx_tau], Res, dat, idx_tau, idx_array)
-
-    print("MUSIC")
+    # Do the Algorithms
+    print("Algorithms")
     # PmMM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
-    # Pm_Capon = fun.capon(R, Res, dat, idx_tau, idx_array)
-    Pm_Barlett = fun.barlett(R, Res, dat, idx_tau, idx_array, tau_search)
+    idx_subarray = fun.getSubarray(array_size, smoothing_array_size,
+                                   offset=[0, 0, 0], spacing=2)
+    Pm_Capon = fun.capon(RFB, Res, dat, idx_subarray[1],
+                         idx_subarray[0], tau_search)
+
+    Pm_Barlett = fun.barlett(R, Res, dat, idx_array[1],
+                             idx_array[0], tau_search)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res[0])
@@ -87,21 +94,23 @@ if __name__ == '__main__':
     TDoA = (dat['smc_param'][0][0][2])*(1/3e8) + np.abs(dat['tau'][0])
 
     if plot == 1:
-        """
         plt.figure()
-        plt.title(f"PM - Sweep - res: {Res}")
-        plt.imshow(np.abs(Pm.T), norm=LogNorm(),
-                   extent=[0, 360,
-                           np.min(dat['tau']), np.max(dat['tau'])],
-                   aspect="auto")
+        plt.title(f"Capon- Sweep - res: {Res}")
+        plt.scatter(AoA, TDoA, color='r', marker='x')
+        pm_max = np.max(10*np.log10(Pm_Capon))
+        # pm_max = 20
+        plt.imshow(10*np.log10(Pm_Capon), vmin=pm_max-40, vmax=pm_max,
+                   extent=[-180, 180,
+                           tau_search[0], tau_search[1]],
+                   aspect="auto", origin="lower")
         plt.colorbar()
         plt.ylabel("Tau [s]")
         plt.xlabel("Theta [degrees]")
-        """
+
         plt.figure()
         plt.title(f"Barlett- Sweep - res: {Res}")
         plt.scatter(AoA, TDoA, color='r', marker='x')
-        pm_max = np.max(10*np.log10(Pm_Barlett.T))
+        pm_max = np.max(10*np.log10(Pm_Barlett))
         # pm_max = 20
         plt.imshow(10*np.log10(Pm_Barlett), vmin=pm_max-40, vmax=pm_max,
                    extent=[-180, 180,
