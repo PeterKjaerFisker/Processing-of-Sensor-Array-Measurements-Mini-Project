@@ -18,14 +18,15 @@ from scipy.signal import find_peaks
 # ---- Modified ----
 def delay_respons_vector(theta, tau, r, f, lambda_):
     # Angle
-    a = (np.exp(-2j*np.pi*(1/lambda_) *
-         np.array([np.cos(theta), np.sin(theta)]).T@r))
+    e = np.array([np.cos(theta), np.sin(theta)])
+
+    a = (np.exp(-2j*np.pi*(1/lambda_) * e@r)).T
 
     # Delay
-    b = (np.exp(-2j*np.pi*f*tau)).reshape(len(f))
+    b = (np.exp(-2j*np.pi*f*tau))
 
     # Return kronecker product
-    return np.kron(b, a).T
+    return np.kron(b, a)
 
 
 def MUSIC(R, Res, dat, idx_tau, idx_array, M):
@@ -47,6 +48,7 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
     # ------ Step 4 - Calculate Freq. estimate ------
     # Do the caluclations
     for i in range(len(Theta)):
+        print(i)
         for j in range(len(Tau)):
             # Calculate for the different steering matrix
             As = delay_respons_vector(Theta[i], Tau[j], r, f, lambda_)
@@ -56,36 +58,35 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M):
 
             Pm[i, j] = 1/np.abs(Ash@Un@Unh@As)
 
-            print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
+            # print(f"step {i*len(Tau) + j + 1} out of {Res*len(Tau)}")
 
     return Pm
 
 
-def getSubarray(L1, L2, spacing=1):
+def getSubarray(Outer_dimx, Outer_dimy, Inner_dimx, Inner_dimy, spacing=1):
     """
     getSubarray gives you the index of the subarray of size L1 and L2 with
     respect to N_row and N_column.
     """
-    N_row = 71
-    N_column = 66
 
-    idx_column = np.arange(0, N_row, spacing
-                           ).reshape([int(np.ceil(N_row/spacing)), 1])
-    idx_row = np.arange(0, N_column, spacing
-                        ).reshape([int(np.ceil(N_column/spacing)), 1])
+    idx_column = np.arange(0, Outer_dimx, spacing
+                           ).reshape([int(np.ceil(Outer_dimx/spacing)), 1])
+    idx_row = np.arange(0, Outer_dimy, spacing
+                        ).reshape([int(np.ceil(Outer_dimy/spacing)), 1])
 
-    if (len(idx_column) < L1) or (len(idx_row) < L2):
+    if (len(idx_column) < Inner_dimx) or (len(idx_row) < Inner_dimy):
         print('Problem in finding the subarray')
         exit()
     else:
-        idx_column = idx_column[0:L1]
-        idx_row = idx_row[0:L2]
+        idx_column = idx_column[0:Inner_dimx]
+        idx_row = idx_row[0:Inner_dimy]
 
-    idx_array = np.zeros([L1*L2, 1], dtype=int)
+    idx_array = np.zeros([Inner_dimx*Inner_dimy, 1], dtype=int)
 
-    for il2 in range(L2):
-        idx_array[il2*L1:(il2+1)*L1] = (idx_column +
-                                        N_row*(il2)*spacing)
+    for il2 in range(Inner_dimy):
+        idx_array[il2*Inner_dimx:
+                  (il2+1)*Inner_dimx] = (idx_column +
+                                         Outer_dimx*(il2)*spacing)
 
     return idx_array
 
@@ -152,9 +153,9 @@ def barlettRA(X, Res, dat, idx_tau, idx_array):
     return np.abs(DTFT_aoa@X@DTFTconj_delay)
 
 
-def barlett(R, Res, dat, idx_tau, idx_array):
+def barlett(R, Res, dat, idx_tau, idx_array, tau_search):
     # Parameters
-    Tau = dat['tau']
+    Tau = np.linspace(tau_search[0], tau_search[1], Res)
     f = dat['f'][idx_tau]
     f0 = dat['f0']
     r = dat['r'][:, idx_array.reshape(len(idx_array))]
@@ -189,7 +190,7 @@ def capon(R, Res, dat, idx_tau, idx_array):
 
     lambda_ = 3e8/f0
 
-    Theta = np.linspace(0, np.pi, Res)
+    Theta = np.linspace(0, 2*np.pi, Res)
     Pm = np.zeros([Res, len(Tau)])
 
     # Do the caluclations

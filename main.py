@@ -26,13 +26,18 @@ pio.renderers.default = 'browser'
 
 if __name__ == '__main__':
     # ---- Parameters ----
-    Res = 20
+    Res = 100
 
     M = 5
 
+    N_row = 71
+    N_column = 66
+
     # For: getSubarray
-    L1 = 10  # Number of sub rows
-    L2 = 10  # Number of sub columns
+    L1 = 4  # Number of sub rows
+    L2 = 4  # Number of sub columns
+
+    tau_search = [0.5e-8, 5e-8]
 
     # plot
     plot = 1
@@ -45,7 +50,7 @@ if __name__ == '__main__':
     X = dat['X_synthetic']
 
     # Index data vector for antennas in subarray
-    idx_array = fun.getSubarray(L1, L2, 2)
+    idx_array = fun.getSubarray(N_row, N_column, L1, L2, 2)
 
     # How many freq. points we want to look at
     idx_tau = np.arange(0, np.size(dat['tau'], axis=0))
@@ -73,12 +78,16 @@ if __name__ == '__main__':
 
     print("MUSIC")
     # PmMM = fun.MUSIC(RFB, Res, dat, idx_tau, idx_array[idx_array_v2], M)
-    PmMM = fun.barlett(R, Res, dat, idx_tau, idx_array)
+    # Pm_Capon = fun.capon(R, Res, dat, idx_tau, idx_array)
+    Pm_Barlett = fun.barlett(R, Res, dat, idx_tau, idx_array, tau_search)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res)
+    AoA = (dat['smc_param'][0][0][1])*180/np.pi
+    DoA = (dat['smc_param'][0][0][2])*(1/3e8)
 
     if plot == 1:
+        """
         plt.figure()
         plt.title(f"PM - Sweep - res: {Res}")
         plt.imshow(np.abs(Pm.T), norm=LogNorm(),
@@ -88,13 +97,14 @@ if __name__ == '__main__':
         plt.colorbar()
         plt.ylabel("Tau [s]")
         plt.xlabel("Theta [degrees]")
-
+        """
         plt.figure()
         plt.title(f"Barlett- Sweep - res: {Res}")
-        plt.imshow(PmMM.T, norm=LogNorm(),
+        plt.scatter(AoA,DoA, color='r', marker='x')
+        pm_max = np.max(10*np.log10(Pm_Barlett.T))
+        plt.imshow(10*np.log10(Pm_Barlett.T), vmin=pm_max-40, vmax=pm_max,
                    extent=[-180, 180,
-                           np.min(dat['tau']), np.max(dat['tau'])],
-                   vmin = 0.1, 
+                           tau_search[0], tau_search[1]],
                    aspect="auto")
         plt.colorbar()
         plt.ylabel("Tau [s]")
@@ -116,3 +126,16 @@ if __name__ == '__main__':
         fig2.show()
 
     print("Hello World")  # Prints "Hello World"
+    
+"""
+        plt.figure()
+        plt.title(f"Barlett- Sweep - res: {Res}")
+        plt.imshow(Pm_Barlett.T, norm=LogNorm(vmin=0.01),
+                   extent=[-180, 180,
+                           np.min(dat['tau']), np.max(dat['tau'])],
+                   aspect="auto")
+        plt.colorbar()
+        plt.ylabel("Tau [s]")
+        plt.xlabel("Theta [degrees]")
+
+"""
