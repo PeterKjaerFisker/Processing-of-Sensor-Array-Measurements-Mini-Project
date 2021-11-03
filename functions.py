@@ -71,32 +71,34 @@ def estM(E, N, pn):
     return np.argmin(MMDL) + 1
 
 
-def getSubarray(Outer_dimx, Outer_dimy, Inner_dimx, Inner_dimy, spacing=1):
+
+def getSubarray(Outer_dims, Inner_dims, offset=[0,0,0], spacing=1):
     """
     getSubarray gives you the index of the subarray of size L1 and L2 with
     respect to N_row and N_column.
     """
 
-    idx_column = np.arange(0, Outer_dimx, spacing
-                           ).reshape([int(np.ceil(Outer_dimx/spacing)), 1])
-    idx_row = np.arange(0, Outer_dimy, spacing
-                        ).reshape([int(np.ceil(Outer_dimy/spacing)), 1])
+    idx_column = np.arange(0, Outer_dims[0], spacing
+                           ).reshape([int(np.ceil(Outer_dims[0]/spacing)), 1])
+    idx_row = np.arange(0, Outer_dims[1], spacing
+                        ).reshape([int(np.ceil(Outer_dims[1]/spacing)), 1])
+    idx_freq = np.arange(offset[2], offset[2]+Inner_dims[2], 1)
 
-    if (len(idx_column) < Inner_dimx) or (len(idx_row) < Inner_dimy):
+    if (len(idx_column) < Inner_dims[0]) or (len(idx_row) < Inner_dims[1]):
         print('Problem in finding the subarray')
         exit()
     else:
-        idx_column = idx_column[0:Inner_dimx]
-        idx_row = idx_row[0:Inner_dimy]
+        idx_column = idx_column[offset[0]:offset[0]+Inner_dims[0]]
+        idx_row = idx_row[0:Inner_dims[1]]
 
-    idx_array = np.zeros([Inner_dimx*Inner_dimy, 1], dtype=int)
+    idx_array = np.zeros([Inner_dims[0]*Inner_dims[1], 1], dtype=int)
 
-    for il2 in range(Inner_dimy):
-        idx_array[il2*Inner_dimx:
-                  (il2+1)*Inner_dimx] = (idx_column +
-                                         Outer_dimx*(il2)*spacing)
+    for il2 in range(Inner_dims[1]):
+        idx_array[il2*Inner_dims[0]:
+                  (il2+1)*Inner_dims[0]] = (idx_column +
+                                         Outer_dims[0]*(il2+offset[1])*spacing)
 
-    return idx_array
+    return [idx_array, idx_freq]
 
 
 def spatialSmoothing(x, L, Ls, method=str):
