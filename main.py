@@ -94,21 +94,23 @@ if __name__ == '__main__':
     TDoA = (dat['smc_param'][0][0][2])*(1/3e8) + np.abs(dat['tau'][0])
 
     if plot == 1:
-        """
         plt.figure()
-        plt.title(f"PM - Sweep - res: {Res}")
-        plt.imshow(np.abs(Pm.T), norm=LogNorm(),
-                   extent=[0, 360,
-                           np.min(dat['tau']), np.max(dat['tau'])],
-                   aspect="auto")
+        plt.title(f"Capon- Sweep - res: {Res}")
+        plt.scatter(AoA, TDoA, color='r', marker='x')
+        pm_max = np.max(10*np.log10(Pm_Capon))
+        # pm_max = 20
+        plt.imshow(10*np.log10(Pm_Capon), vmin=pm_max-40, vmax=pm_max,
+                   extent=[-180, 180,
+                           tau_search[0], tau_search[1]],
+                   aspect="auto", origin="lower")
         plt.colorbar()
         plt.ylabel("Tau [s]")
         plt.xlabel("Theta [degrees]")
-        """
+
         plt.figure()
         plt.title(f"Barlett- Sweep - res: {Res}")
         plt.scatter(AoA, TDoA, color='r', marker='x')
-        pm_max = np.max(10*np.log10(Pm_Barlett.T))
+        pm_max = np.max(10*np.log10(Pm_Barlett))
         # pm_max = 20
         plt.imshow(10*np.log10(Pm_Barlett), vmin=pm_max-40, vmax=pm_max,
                    extent=[-180, 180,
