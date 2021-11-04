@@ -13,7 +13,6 @@ import scipy.io as scio
 import functions as fun
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 import plotly.graph_objects as go
 import plotly.io as pio
 
@@ -27,6 +26,9 @@ pio.renderers.default = 'browser'
 if __name__ == '__main__':
     # ---- Parameters ----
     Res = [100, 100]  # Res for [theta, tau]
+
+    # SNR in [dB]
+    SNRdb = -10
 
     # Number of sources
     M = 5
@@ -58,6 +60,10 @@ if __name__ == '__main__':
 
     # Freq. domain
     X = dat['X_synthetic']
+    # X = dat['X']
+
+    # ---- Add noise ----
+    X = fun.addNoise(X, SNRdb)
 
     # Index data vector for antennas in subarray
     idx_array = fun.getSubarray(array_size, subarray_size,
@@ -81,7 +87,6 @@ if __name__ == '__main__':
     print("Algorithms")
     idx_subarray = fun.getSubarray(array_size, smoothing_array_size,
                                    offset=[0, 0, 0], spacing=2)
-
     print("Capon")
     Pm_Capon = fun.capon(RFB, Res, dat, idx_subarray[1],
                          idx_subarray[0], tau_search)
@@ -92,7 +97,7 @@ if __name__ == '__main__':
 
     print("MUSIC")
     Pm_MUSIC = fun.MUSIC(RFB, Res, dat, idx_subarray[1],
-                         idx_subarray[0], M, tau_search)
+                         idx_subarray[0], tau_search, M=M)
 
     # %% Plot
     Theta = np.linspace(0, np.pi, Res[0])
@@ -100,8 +105,9 @@ if __name__ == '__main__':
     TDoA = (dat['smc_param'][0][0][2])*(1/3e8) + np.abs(dat['tau'][0])
 
     if plot == 1:
+
         plt.figure()
-        plt.title(f"Capon- Sweep - res: {Res}")
+        plt.title(f"Capon- Sweep - res: {Res} - SNRdb: {SNRdb}")
         plt.scatter(AoA, TDoA, color='r', marker='x')
         pm_max = np.max(10*np.log10(Pm_Capon))
         # pm_max = 20
@@ -114,7 +120,7 @@ if __name__ == '__main__':
         plt.xlabel("Theta [degrees]")
 
         plt.figure()
-        plt.title(f"Barlett- Sweep - res: {Res}")
+        plt.title(f"Barlett- Sweep - res: {Res} - SNRdb: {SNRdb}")
         plt.scatter(AoA, TDoA, color='r', marker='x')
         pm_max = np.max(10*np.log10(Pm_Barlett))
         # pm_max = 20
@@ -127,7 +133,7 @@ if __name__ == '__main__':
         plt.xlabel("Theta [degrees]")
 
         plt.figure()
-        plt.title(f"MUSIC- Sweep - res: {Res}")
+        plt.title(f"MUSIC- Sweep - res: {Res} - SNRdb: {SNRdb}")
         plt.scatter(AoA, TDoA, color='r', marker='x')
         pm_max = np.max(10*np.log10(Pm_MUSIC))
         # pm_max = 20

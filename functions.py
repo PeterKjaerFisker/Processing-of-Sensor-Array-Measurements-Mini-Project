@@ -10,8 +10,6 @@ Created on Mon Oct 25 09:04:24 2021
 
 import numpy as np
 
-from scipy.signal import find_peaks
-
 # %% Functions
 
 
@@ -29,6 +27,21 @@ def delay_respons_vector(theta, tau, r, f, lambda_):
     return np.kron(b, a)
 
 
+def addNoise(X, SNRdb):
+    # Estiemate power
+    x = np.matrix(X.flatten(order="F"))
+    Pxx = (np.abs(x*np.conjugate(x.T))/x.size)[0, 0]
+
+    # Calculate the variance
+    Noise_power = (10**(-SNRdb/10))*Pxx
+
+    # Calculate Noise
+    W = np.sqrt(Noise_power/2)*(np.random.randn(X.shape[0], X.shape[1]) +
+                                1j*np.random.randn(X.shape[0], X.shape[1]))
+
+    return X + W
+
+
 def estM(E, N, pn):
     p = np.arange(1, pn+1).reshape([1, pn])
 
@@ -37,8 +50,7 @@ def estM(E, N, pn):
     return np.argmin(MMDL) + 1
 
 
-
-def getSubarray(Outer_dims, Inner_dims, offset=[0,0,0], spacing=1):
+def getSubarray(Outer_dims, Inner_dims, offset=[0, 0, 0], spacing=1):
     """
     getSubarray gives you the index of the subarray of size L1 and L2 with
     respect to N_row and N_column.
@@ -55,14 +67,12 @@ def getSubarray(Outer_dims, Inner_dims, offset=[0,0,0], spacing=1):
         exit()
     else:
         idx_column = idx_column[offset[0]:offset[0]+Inner_dims[0]]
-        idx_row = idx_row[0:Inner_dims[1]]
 
     idx_array = np.zeros([Inner_dims[0]*Inner_dims[1], 1], dtype=int)
 
     for il2 in range(Inner_dims[1]):
-        idx_array[il2*Inner_dims[0]:
-                  (il2+1)*Inner_dims[0]] = (idx_column +
-                                         Outer_dims[0]*(il2+offset[1])*spacing)
+        idx_array[il2*Inner_dims[0]:(il2+1)*Inner_dims[0]] = \
+            (idx_column + Outer_dims[0]*(il2+offset[1])*spacing)
 
     return [idx_array, idx_freq]
 
@@ -74,8 +84,6 @@ def spatialSmoothing(x, L, Ls, method=str):
     """
     # Split the signal array into P sub arays
     # And calculate the forward covariance
-    #x_cube = x.reshape(L, order='F')
-
     Px, Py, Pz = L - Ls + 1
 
     RF = np.zeros([np.prod(Ls), np.prod(Ls)], dtype=np.complex128)
@@ -84,11 +92,10 @@ def spatialSmoothing(x, L, Ls, method=str):
         for py in range(Py):
             for pz in range(Pz):
                 idx_array = getSubarray(L, Ls, offset=[px, py, pz], spacing=1)
+
                 xs = x[idx_array[0], idx_array[1]].flatten(order='F')
-                xs = np.reshape(xs,(len(xs),1))
-                # xs = x_cube[px:(px+Ls[0]),
-                #             py:(py+Ls[1]),
-                #             pz:(pz+Ls[2])].flatten(order='F')
+                xs = np.reshape(xs, (len(xs), 1))
+
                 xsh = np.conjugate(xs).T
 
                 RF += xs@xsh
@@ -97,7 +104,6 @@ def spatialSmoothing(x, L, Ls, method=str):
 
     # return forward
     if method == "forward":
-        print("JEG SKRIDER HER")
         return RF
 
     # Backward Selection Matrix
@@ -107,33 +113,7 @@ def spatialSmoothing(x, L, Ls, method=str):
     return (1/2)*(RF+J_LS@np.conjugate(RF)@J_LS)
 
 
-def barlettRA(X, Res, dat, idx_tau, idx_array):
-    # Parameters
-    Tau = dat['tau']
-    f0 = dat['f0']
-    r = dat['r'][:, idx_array.reshape(len(idx_array))]
-
-    aoa_search = np.linspace(0, 2*np.pi, Res[0])
-    DTFT_aoa = np.zeros([Res[0], len(idx_array)], dtype=np.complex128)
-
-    for im in range(Res[0]):
-        DTFT_aoa[im, :] = np.exp(-1j*2*np.pi*(f0/3e8) * np.array(
-                                 [np.cos(aoa_search[im]),
-                                  np.sin(aoa_search[im])]).T@r)
-
-    K = 300
-    tau_search = np.linspace(0, 1, K)
-    f_tau = np.arange(0, len(Tau))
-
-    DTFTconj_delay = np.zeros([len(Tau), K], dtype=np.complex128)
-
-    for ik in range(K):
-        DTFTconj_delay[:, ik] = np.exp(1j*2*np.pi*f_tau*tau_search[ik])
-
-    return np.abs(DTFT_aoa@X@DTFTconj_delay)
-
-
-def MUSIC(R, Res, dat, idx_tau, idx_array, M, tau_search):
+def MUSIC(R, Res, dat, idx_tau, idx_array, tau_search, M=None):
     # Parameters
     Tau = np.linspace(tau_search[0], tau_search[1], Res[1], endpoint=True)
     f = dat['f'][idx_tau]
@@ -147,7 +127,13 @@ def MUSIC(R, Res, dat, idx_tau, idx_array, M, tau_search):
 
     # ------ Step 3 - Form U ------
     E, U = np.linalg.eig(R)
-    Un = U[:, M:]
+
+    if M is None:
+        M_est = estM(E, 101, 50)
+    else:
+        M_est = M
+    print(M_est)
+    Un = U[:, M_est:]
 
     # ------ Step 4 - Calculate Freq. estimate ------
     # Do the caluclations
