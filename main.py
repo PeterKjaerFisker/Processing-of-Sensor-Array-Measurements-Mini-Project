@@ -39,13 +39,13 @@ if __name__ == '__main__':
     N_freq_samples = 101
 
     # Dimensions for sub-array
-    N_row_subarray = 15
-    N_column_subarray = 15
+    N_row_subarray = 19
+    N_column_subarray = 19
     N_freq_samples_subarray = 20
 
     # Dimensions for array used in spacial smoothing
-    N_row_smoothingarray = 6
-    N_column_smoothingarray = 6
+    N_row_smoothingarray = 10
+    N_column_smoothingarray = 10
     N_freq_samples_smoothingarray = 10
 
     # Create numpy-arrays with dimensions
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     # ----- Run Algorithms -----
     print("Algorithms")
 
-    print("Barlett")
+    print("Bartlett")
     Pm_Barlett = fun.bartlett(R, Res, dat, idx_array[1], idx_array[0], tau_search)
 
     # Indexes for picking antennas and samples when using smoothed covariance
