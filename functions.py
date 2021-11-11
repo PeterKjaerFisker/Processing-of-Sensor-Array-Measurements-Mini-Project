@@ -2,8 +2,7 @@
 """
 Created on Mon Oct 25 09:04:24 2021
 
-@authors: Nicolai Almskou Rasmussen, Victor Mølbach Nissen,
-          Peter Kjær Fisker, Claus Meyer Larsen & Dennis Kjærsgaard Sand
+@authors: Peter Kjær Fisker, Claus Meyer Larsen & Dennis Kjærsgaard Sand
 """
 
 # %% Imports
